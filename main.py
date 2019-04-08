@@ -1,19 +1,41 @@
 '''
+John G. Wilson Negroni
+https://github.com/JakeRylander/
 
-Bot for PR War, long live Hatillo Cows
-
+Python Based Clone of the Popular FB Bot WarWorldBot2020 using Puerto Rico Municipalities
 '''
+
 import math
 import random
 from PIL import Image, ImageDraw
 
-#Radius of Ze Earth
+'''
+Data_Set Index Value Uses
+
+0 = Name
+1 = Population
+2 = Area
+3 = Lat
+4 = Long
+5 = Image Coords
+6 = Under Control of
+7 = Amount of Territories Controled
+8 = Assigned Color
+'''
+
+#Statistics
+Territories_Remaining = 0
+
+#Radius of Ze Earth-ish
 Radius = 6371000
 
 #Time and Record Keeping
 Turn = 1
+Month = 1
+Year = 2069
+Month_Strings = ["null", "January", "Febraury", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
-#Pueblo Data
+#Data Set
 #			 Name, 				Pop, 	Sq Km, 	Lat, 	  Long       Image Coords
 Data_Set = [["Adjuntas", 		19483, 	172.73, 18.16379, -66.72369, (728,520)],
 			["Aguada", 			41959, 	79.90, 	18.37939, -67.18824, (180,270)],
@@ -39,7 +61,7 @@ Data_Set = [["Adjuntas", 		19483, 	172.73, 18.16379, -66.72369, (728,520)],
 			["Coamo",			40512, 	202.27, 18.07996, -66.35795, (1237,627)],
 			["Comerío",			20778, 	73.56, 18.21801, -66.226, (1424,467)],
 			["Corozal",			37142, 	110.26, 18.34106, -66.31684, (1303,357)],
-			["Culebra",			1818, 	30.10, 18.30301, -65.30099, (2189,902)],
+			["Culebra",			1818, 	30.10, 18.350937,-65.568752, (2189,902)],
 			["Dorado",			38165, 	59.80, 18.45883, -66.26767, (1347,165)],
 			["Fajardo",			36993, 	77.34, 18.32579, -65.65238, (2172,330)],
 			["Florida",			12680, 	39.39, 18.36245, -66.56128, (973,264)],
@@ -89,86 +111,192 @@ Data_Set = [["Adjuntas", 		19483, 	172.73, 18.16379, -66.72369, (728,520)],
 			["Utuado",			33149, 	294.04, 18.26551, -66.70045, (786,396)],
 			["Vega Alta",		39951, 	71.82, 18.41217, -66.33128, (1298,192)],
 			["Vega Baja",		59662, 	118.78, 18.44439, -66.38767, (1215,181)],
-			["Vieques",			9301, 	131.49, 18.14913, -65.44266, (2051,1078)],
+			["Vieques",			9301, 	131.49, 18.255758,-65.524807, (2051,1078)],
 			["Villalba",		26073, 	92.31, 18.12718, -66.49212, (1100,594)],
 			["Yabucoa",			37941, 	142.99, 18.05052, -65.87933, (1892,676)],
 			["Yauco",			42043, 	176.61, 18.03496, -66.8499, (572,649)]]
 			
-
-#Calculates Distance from one Territory to another using 'haversine' formula
+#Returns Distance from one Territory to another using 'haversine' formula
 def Distance (Territory1, Territory2):
+
+	#Convert Latitutes to Radians
 	latitude1 = math.radians(Data_Set[Territory1][3])
 	latitude2 = math.radians(Data_Set[Territory2][3])
 	
+	#Average Latitude
 	deltaLatitude = math.radians((Data_Set[Territory2][3] - Data_Set[Territory1][3]))
+	
+	#Average Longitude
 	deltaLongitude = math.radians((Data_Set[Territory2][4] - Data_Set[Territory1][4]))
 
+	#Haversine Formula Shenanigans
 	a = math.pow(math.sin(deltaLatitude/2), 2) + ((math.cos(latitude1) * math.cos(latitude2)) * math.pow(math.sin(deltaLongitude/2),2))
 	c = 2 * (math.atan2(math.sqrt(a), math.sqrt(1-a)))
 	
+	#Multiply by Radius of the Earth
 	result = Radius * c
 	
+	#Return Distance
 	return result
 
 #Initialize Data Set with every Territory controlling itself and having number of controlled territories of 1
 def Initialize ():	
+	
+	#Global References
+	global Territories_Remaining
+
+	#Opens Base Map Image
 	image = Image.open('Map_Base.png')
+	
+	#Appens to the List who is in control and controlling 1 territory
 	for x in range(0, len(Data_Set)):
 		Data_Set[x].append(Data_Set[x][0])
 		Data_Set[x].append(1)
 		
-		#Color stuff (Temp)
+		#Sets a Random Color to each territory (Temporary)
 		color = (random.randint(0,200), random.randint(0,200), random.randint(0,200), 255)
 		ImageDraw.floodfill(image, Data_Set[x][5], color, thresh = 100)
 		
+		#Append the Territories assigned color
 		Data_Set[x].append(color)
 		
+	#Saves Map with the assigned colors to begin Game
 	image.save ("Map_Game1.png")
-		
-def PrintData ():
-	for x in range(0, len(Data_Set)):
-		print (Data_Set[x])
 	
+	#Set Initial Statistics Values
+	Territories_Remaining = len(Data_Set)
+		
+#Testing Funcion for more neatly printing Data
+def PrintData ():
+
+	#Itireration over Data_Set
+	for x in Data_Set:
+		print (x)
+	
+#Returns an Int which is the index of one of the Territories in the Data_Set List
 def Select_Attacker ():
-	selected = random.randint(0, 77)
-	#print("Selected Attacker: " + str(Data_Set[selected][0]) + " under the control of: " + str(Data_Set[selected][5]))
+	
+	#Pick Random Int from lenght of list.
+	selected = random.randint(0, len(Data_Set) - 1)
+	
+	#Return Index of Attacker
 	return selected
 	
+#To Do: Algorithm for N amount of closests territories instead of 2
+#Selects 2 closests targets from attacker and picks 1 of them to attack, returns the Index of the Target
 def Select_Target (Attacker):
-	Close_Target = 0
-	Shortest_Distance = 999999999999999
+
+	Target_List = [None,None]
+	Shortest_Distance = [math.inf, math.inf] #Actually using an infinite number
 	for x in range (0, len(Data_Set)):
 		if (Data_Set[Attacker][6] != Data_Set[x][6]):
-			if (Distance(Attacker, x) < Shortest_Distance):
-				Close_Target = x
-				Shortest_Distance = Distance(Attacker, x)
-	return Close_Target
+			if (Distance(Attacker, x) < Shortest_Distance[0]):
+				Target_List[0] = x
+				Shortest_Distance[0] = Distance(Attacker, x)
+			elif (Distance(Attacker, x) < Shortest_Distance[1]):
+				Target_List[1] = x
+				Shortest_Distance[1] = Distance(Attacker, x)
+				
+	Target = random.choice(Target_List)
 	
-def Determine_Outcome (Attacker, Target):
-	global Turn 
+	while (Target == None):
+		Target = random.choice (Target_List)
 	
-	print("Turn " + str(Turn) + ": " + str(Data_Set[Attacker][6]) + " attacked " + str(Data_Set[Target][0]) + " which is under the control of " + str(Data_Set[Target][6]))
+	return Target
+	
+#Return String representation of the Date
+def Get_Date ():
 
-	#Update amount of controled territorries
-	Temp1 = GetID(Target)
-	Data_Set[Temp1][7] = Data_Set[Temp1][7] - 1
+	#Global References
+	global Month, Year
+
+	#Generate string representation
+	date = Month_Strings[Month] + " " + str(Year)
+
+	#Return Date in string form
+	return date
+
+#Updates the Date once turn ends
+def Update_Date ():
 	
-	Temp2 = GetID(Attacker)
-	Data_Set[Temp2][7] = Data_Set[Temp2][7] + 1
+	#Global References
+	global Turn, Month, Year
 	
-	#Change who controls
-	Data_Set[Target][6] = Data_Set[Attacker][6]
-	
-	image = Image.open("Map_Game" + str(Turn) + ".png")
-	
-	color = Data_Set[GetID(Attacker)][8]
-	ImageDraw.floodfill(image, Data_Set[Target][5], color, thresh = 5)
-	
+	#If End of Year
+	if (Month == 12):
+		Month = 1
+		Year =  Year + 1
+	else:
+		Month = Month + 1
+		
+	#Increment Turn
 	Turn = Turn + 1
 	
+	#New line for better readinto
+	print("")
+		
+	
+#To Do: More Dynamic, not just a 50/50 chance of winning or losing
+#Determines the Outcome of the Fight
+def Determine_Outcome (Attacker, Target):
+
+	#Global References
+	global Territories_Remaining
+	
+	#50/50 Chance of Defending against Attack
+	chance = random.randint(0, 1)
+	
+	#Flavor Printout for Initial Attack
+	print(Get_Date() + ": \n" + str(Data_Set[Attacker][6]) + " attacked " + str(Data_Set[Target][0]) + " which is under the control of " + str(Data_Set[Target][6]) + ".")
+	
+	#Open Image
+	image = Image.open("Map_Game" + str(Turn) + ".png")
+	
+	#Succesful Attack
+	if (chance):
+
+		#If Capital that got taken
+		if (Data_Set[Target][0] == Data_Set[Target][6]):
+			print(str(Data_Set[Target][0]) + " wasn't able to defend and lost it's Capital.")
+		
+		#Controlled Territory
+		else:
+			print(str(Data_Set[Target][6]) + " wasn't able to defend and lost it's territory.")
+
+		#Update amount of controled territorries
+		Temp1 = Get_ID(Target)
+		Data_Set[Temp1][7] = Data_Set[Temp1][7] - 1
+		
+		Temp2 = Get_ID(Attacker)
+		Data_Set[Temp2][7] = Data_Set[Temp2][7] + 1
+		
+		#If Target has no Territory left
+		if (Data_Set[Temp1][7] == 0):
+			print(str(Data_Set[Target][6]) + " has lost all territory, " + str(Data_Set[Target][6]) + " has been defeated.")
+			
+			#Decrease Remaining Territories
+			Territories_Remaining = Territories_Remaining - 1
+			print(str(Territories_Remaining) + " Territories Remaining.")
+			
+		#Change who controls
+		Data_Set[Target][6] = Data_Set[Attacker][6]
+		
+		#Update Image Territory Color
+		color = Data_Set[Get_ID(Attacker)][8]
+		ImageDraw.floodfill(image, Data_Set[Target][5], color, thresh = 5)
+		
+	#Succesfully Defended Attack
+	else:
+		print(str(Data_Set[Target][6]) + " succesfully defended.")
+	
+	#Update Date and Turn
+	Update_Date()
+	
+	#Save Image
 	image.save ("Map_Game" + str(Turn) + ".png")
 	
-def GetID (number):	
+#Helper Function for Determine_Outcome
+def Get_ID (number):	
 	for x in range (0, len(Data_Set)):
 		if (Data_Set[x][0] == Data_Set[number][6]):
 			return x
@@ -178,26 +306,21 @@ def GetID (number):
 Initialize()
 Has_Someone_Won = False
 
-
 #Game Loop
 while (not Has_Someone_Won):
 
 	Attacker = Select_Attacker()
 	Target = Select_Target(Attacker)
 	Determine_Outcome(Attacker, Target)
-	if (Data_Set[GetID(Attacker)][7] == 78):
-		print(str(Data_Set[GetID(Attacker)][6]) + " has won")
+	if (Data_Set[Get_ID(Attacker)][7] == 78):
+		print(str(Data_Set[Get_ID(Attacker)][6]) + " has won")
 		Has_Someone_Won = True;
-		PrintData()
 		
 		
 		
 '''		
 #To do:
-
-When someone gets eliminated
-When someone loses their Capital
-
+IDK will write down ideas here later
 '''
 
 	
