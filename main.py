@@ -7,23 +7,9 @@ Python Based Clone of the Popular FB Bot WarWorldBot2020 using Puerto Rico Munic
 
 import math
 import random
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 from Territory import Territory
 import csv
-
-'''
-Data_Set Index Value Uses
-
-0 = Name
-1 = Population
-2 = Area
-3 = Lat
-4 = Long
-5 = Image Coords
-6 = Under Control of
-7 = Amount of Territories Controled
-8 = Assigned Color
-'''
 
 #Statistics
 Territories_Remaining = 0
@@ -185,7 +171,7 @@ def Determine_Outcome (Attacker, Target):
 	print(Get_Date() + ": \n" + str(Attacker.controled_by.name) + " attacked " + str(Target.name) + " which is under the control of " + str(Target.controled_by.name) + ".")
 	
 	#Open Image
-	image = Image.open("Map_Game" + str(Turn) + ".png")
+	Base_Map = Image.open("Map_Game" + str(Turn) + ".png")
 	
 	#Succesful Attack
 	if (chance):
@@ -214,8 +200,96 @@ def Determine_Outcome (Attacker, Target):
 		Target.controled_by = Attacker.controled_by
 		
 		#Update Image Territory Color
-		color = Attacker.controled_by.assigned_color
-		ImageDraw.floodfill(image, Target.image_coords, color, thresh = 5)
+		Attacker_Color = Attacker.controled_by.assigned_color
+		ImageDraw.floodfill(Base_Map, Target.image_coords, Attacker_Color, thresh = 5)
+		
+		#Overlay Generator
+		
+		#######################
+		#Save Base Map
+		Base_Map.save ("Map_Game" + str(Turn) + ".png")
+		
+		#Open Base Map, Save as Overlay, and Re-open
+		Base_Map = Image.open("Map_Game" + str(Turn) + ".png")
+		Base_Map.save ("Overlay.png")
+		Map_Overlay = Image.open("Overlay.png")
+		
+		#Load Overlay Pixels
+		Overlay_Pixel = Map_Overlay.load()
+		
+		#Get Image Size
+		width, height = Map_Overlay.size
+		
+		#Loops Over entire Base Map making Transparent everything that is not the Attacker Territory
+		for x in range(0,width):
+			for y in range(0,height):
+				if (not (Overlay_Pixel[x,y] == Attacker_Color)):
+					Overlay_Pixel[x,y] = (0,0,0,0)
+		
+		#Make Map with Edges of Territories
+		Map_Overlay = Map_Overlay.filter(ImageFilter.FIND_EDGES)
+		
+		#Generate List of Edge Pixels	
+		EdgeList = []
+		for x in range(0,width):
+			for y in range(0,height):
+				if (not(Overlay_Pixel[x,y] == (0,0,0,0))):
+					EdgeList.append((x,y))
+
+		#Load Overlay Pixels again
+		Overlay_Pixel = Map_Overlay.load()
+		
+		#Grow Pixel Edges Out 8 Pixels (Very Redundant can be more efficient)
+		for coords in EdgeList:
+			x,y = coords
+			Overlay_Pixel[x,y] = Attacker_Color
+			for size in range(1,8):
+				Overlay_Pixel[x+size,y] = Attacker_Color
+				Overlay_Pixel[x-size,y] = Attacker_Color
+				Overlay_Pixel[x,y+size] = Attacker_Color
+				Overlay_Pixel[x,y-size] = Attacker_Color
+			
+		#Refind Edges for Full Territory Overlay now
+		Map_Overlay_Highlight = Map_Overlay.filter(ImageFilter.FIND_EDGES)
+
+		#Load Overlay Pixels again
+		Overlay_Pixel = Map_Overlay_Highlight.load()
+		
+		#Generate New Edge Pixel List
+		EdgeList = []
+		for x in range(0,width):
+			for y in range(0,height):
+				if (not(Overlay_Pixel[x,y] == (0,0,0,0))):
+					EdgeList.append((x,y))
+		
+		#Load Overlay Pixels again
+		Overlay_Pixel = Map_Overlay_Highlight.load()
+		Map_Overlay_Pixel = Map_Overlay.load()
+		
+		#Finish Territory Overlay by comparing New Outer Edge to Filled Color
+		color_highlight = (0,255,0,255)
+		for coords in EdgeList:
+			x,y = coords
+			Overlay_Pixel[x,y] = color_highlight
+			for size in range(1,8):
+				Overlay_Pixel[x+size,y] = color_highlight
+				Overlay_Pixel[x-size,y] = color_highlight
+				Overlay_Pixel[x,y+size] = color_highlight
+				Overlay_Pixel[x,y-size] = color_highlight
+						
+						
+		#Smoothen Edges
+		Map_Overlay_Highlight.show()
+		Map_Overlay_Highlight = Map_Overlay_Highlight.filter(ImageFilter.SMOOTH_MORE)
+		
+		Map_Overlay_Highlight.show()
+
+		#Open Base Map
+		Finalized_Map = Image.open("Map_Game" + str(Turn) + ".png")
+		Finalized_Map.paste(Map_Overlay_Highlight, Map_Overlay_Highlight)
+		
+		Finalized_Map.save("Map_Game_Final" + str(Turn) + ".png")
+		#######################
 		
 	#Succesfully Defended Attack
 	else:
@@ -225,7 +299,7 @@ def Determine_Outcome (Attacker, Target):
 	Update_Date()
 	
 	#Save Image
-	image.save ("Map_Game" + str(Turn) + ".png")
+	Base_Map.save ("Map_Game" + str(Turn) + ".png")
 	
 #--------------------------------
 #Initialize
